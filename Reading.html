@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reading Tracker</title>
+  <style>
+    :root{
+      --bg: #0f1020;
+      --card: #171a2e;
+      --accent: #6c5ce7;
+      --accent2: #00c7e5;
+      --text: #f5f5f7;
+      --muted: #cbd3e3;
+      --green: #38d39f;
+      --red: #ff6b6b;
+      --yellow: #ffd166;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto;
+      background: radial-gradient(circle at 20% -10%, rgba(108,92,231,.25), transparent 40%),
+                  radial-gradient(circle at 100% 0%, rgba(0,199,229,.15), transparent 40%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+    }
+    header{ padding:16px; text-align:center; }
+    h1{margin:0; font-size:1.25rem}
+    .container{max-width:1100px; margin:0 auto; padding:16px;}
+    .grid{ display:grid; grid-template-columns:1fr; gap:16px; }
+    @media (min-width: 900px){
+      .grid{ grid-template-columns:1fr 1fr; align-items:start; }
+    }
+
+    .card{
+      background: linear-gradient(135deg, rgba(23,26,46,.95), rgba(23,26,46,.85));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:14px;
+      padding:16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.25);
+    }
+
+    .card h2{ margin:0 0 12px; font-size:1.05rem; color:#fff; }
+    .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    label{ font-size:.9rem; color:var(--muted); width:120px; }
+    input[type="text"], input[type="number"], input[type="date"], textarea, select{
+      width:100%; padding:10px 12px; border-radius:8px; border:1px solid #334155;
+      background:#0b1020; color:#e8eaf6; outline:none;
+    }
+    textarea{ min-height:80px; resize:vertical; }
+
+    button{
+      background: linear-gradient(135deg, var(--accent), #4cc9f0);
+      color:white; border:none; border-radius:8px; padding:10px 14px;
+      cursor:pointer; font-weight:600;
+    }
+    button.secondary{
+      background: #1f2a44; color:#e6eaff; border:1px solid #2d3a7a;
+    }
+    button.danger{ background: #e11d48; }
+    .btns{ display:flex; gap:8px; flex-wrap:wrap; }
+
+    .list{ display:flex; flex-direction:column; gap:12px; }
+    .book-item{
+      display:flex; flex-direction:column; gap:6px;
+      padding:12px; border-radius:10px;
+      background: linear-gradient(135deg, rgba(107, 85, 167, .25), rgba(14, 18, 42, .25));
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .book-title{ font-weight:700; }
+    .tag{ display:inline-block; padding:2px 8px; border-radius:999px;
+           background: rgba(108,92,231,.3); font-size:.75rem; color:white; }
+
+    .summary{ display:flex; flex-direction:column; gap:8px; }
+    .summary-item{ padding:8px 10px; border-radius:8px; background:#11162b; border:1px solid #223; }
+    .fav{ font-size:.9rem; color:#ffd86b; }
+
+    .timer{ font-family: 'Courier New', monospace; font-size:1.25rem; letter-spacing:.5px; }
+    .section-title{ font-weight:700; margin:6px 0 8px; }
+
+    .footer-note{ font-size:.8rem; color:var(--muted); text-align:center; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Reading Tracker</h1>
+    <div class="footer-note">Local storage persists until you delete data. All data stays on this device.</div>
+  </header>
+
+  <main class="container">
+    <div class="grid">
+
+      <!-- Add / Edit Book -->
+      <section class="card" aria-labelledby="add-book-title">
+        <h2 id="add-book-title">Add or Update Book</h2>
+
+        <div class="row" style="flex-wrap:wrap;">
+          <div style="flex:1 1 280px;">
+            <label>Book name</label>
+            <input type="text" id="bookName" placeholder="e.g., The Name of the Wind">
+          </div>
+          <div style="flex:1 1 240px;">
+            <label>Author</label>
+            <input type="text" id="author" placeholder="e.g., Patrick Rothfuss">
+          </div>
+          <div style="flex:1 1 180px;">
+            <label>Last read page</label>
+            <input type="number" id="lastPage" min="0" placeholder="Page number">
+          </div>
+          <div style="flex:1 1 180px;">
+            <label>Currently reading?</label>
+            <select id="isActive">
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px;">
+          <div style="flex:1 1 100%;">
+            <label>Short details about the book</label>
+            <textarea id="details" placeholder="Write a brief detail about the book..."></textarea>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px;">
+          <div style="flex:1 1 60%;">
+            <label>Favorite lines (one per line)</label>
+            <textarea id="favLines" placeholder="Enter lines from the book you love, one per line..."></textarea>
+          </div>
+          <div style="flex:1 1 40%; display:flex; align-items:flex-end;">
+            <div class="btns" style="width:100%;">
+              <button id="saveBook" title="Save book to list">Save Book</button>
+              <button class="secondary" id="clearForm" title="Clear inputs">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px;">
+          <div style="flex:1 1 50%;">
+            <label>Write a short detail</label>
+            <input type="text" id="shortDetail" placeholder="One-line detail about the book (optional)">
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Active reading and timer -->
+      <section class="card" aria-labelledby="timer-title">
+        <h2 id="timer-title" class="section-title">Reading Timer</h2>
+
+        <div class="row" style="align-items:stretch;">
+          <div style="flex:2 1 420px;">
+            <label>Book</label>
+            <select id="activeBookSelector"></select>
+          </div>
+          <div style="flex:1 1 180px; display:flex; align-items:flex-end;">
+            <button id="startTimer" title="Start timer">Start</button>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px;">
+          <div style="flex:1; min-width:180px;">
+            <div class="timer" id="timerDisplay">00:00:00</div>
+          </div>
+          <div style="flex:1; min-width:180px; display:flex; gap:6px;">
+            <button id="pauseTimer" class="secondary" title="Pause timer">Pause</button>
+            <button id="resetTimer" class="secondary" title="Reset timer">Reset</button>
+            <button id="logSession" class="secondary" title="Log this session as time spent">Log</button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:6px;">
+          <span class="tag" id="timerStatus">Idle</span>
+          <span class="tag" id="perBookTime" style="margin-left:auto;">Total today: 0h</span>
+        </div>
+      </section>
+
+      <!-- Summary and completed books -->
+      <section class="card" aria-labelledby="summary-title">
+        <h2 id="summary-title" class="section-title">Reading Summary</h2>
+
+        <div class="row" style="align-items:center;">
+          <span>Total books started: <strong id="totalStarted">0</strong></span>
+          <span style="margin-left:12px;">Completed: <strong id="totalCompleted">0</strong></span>
+        </div>
+
+        <div class="summary" id="summaryList" style="margin-top:8px;">
+          <!-- populated by JS -->
+        </div>
+      </section>
+
+      <!-- Favorites and quick notes -->
+      <section class="card" aria-labelledby="fav-title">
+        <h2 id="fav-title" class="section-title">Favorites & Details</h2>
+
+        <div class="row" style="flex-wrap:wrap;">
+          <div style="flex:1 1 100%;">
+            <label>Favorite lines</label>
+            <textarea id="favDisplay" placeholder="Your saved favorite lines will appear here..."></textarea>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px;">
+          <button id="exportData" class="secondary">Export JSON</button>
+          <button id="importData" class="secondary">Import JSON</button>
+          <button id="deleteAll" class="danger" title="Delete all data">Delete All</button>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <script>
+    // Data model
+    // books: { id, name, author, lastPage, details, shortDetail, favLines: [], isActive, startedAt, completedAt, totalTimeSec }
+    // sessions: { bookId, durationSec, timestamp }
+    let data = {
+      books: [],
+      sessions: []
+    };
+
+    // Timer state
+    let timer = {
+      running: false,
+      startTs: null,
+      elapsed: 0,
+      intervalId: null,
+      currentBookId: null
+    };
+
+    const STORAGE_KEY = "reading-tracker-v1";
+
+    // UI refs
+    const bookNameEl = document.getElementById("bookName");
+    const authorEl = document.getElementById("author");
+    const lastPageEl = document.getElementById("lastPage");
+    const isActiveEl = document.getElementById("isActive");
+    const detailsEl = document.getElementById("details");
+    const favLinesEl = document.getElementById("favLines");
+    const shortDetailEl = document.getElementById("shortDetail");
+    const saveBookBtn = document.getElementById("saveBook");
+    const clearFormBtn = document.getElementById("clearForm");
+
+    const activeBookSelector = document.getElementById("activeBookSelector");
+    const startTimerBtn = document.getElementById("startTimer");
+    const pauseTimerBtn = document.getElementById("pauseTimer");
+    const resetTimerBtn = document.getElementById("resetTimer");
+    const logSessionBtn = document.getElementById("logSession");
+    const timerDisplay = document.getElementById("timerDisplay");
+    const timerStatus = document.getElementById("timerStatus");
+    const perBookTimeEl = document.getElementById("perBookTime");
+
+    const summaryListEl = document.getElementById("summaryList");
+    const totalStartedEl = document.getElementById("totalStarted");
+    const totalCompletedEl = document.getElementById("totalCompleted");
+    const favDisplayEl = document.getElementById("favDisplay");
+
+    const exportDataBtn = document.getElementById("exportData");
+    const importDataBtn = document.getElementById("importData");
+    const deleteAllBtn = document.getElementById("deleteAll");
+
+    // Helpers
+    function saveAll() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      renderUI();
+    }
+
+    function loadAll() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          data = JSON.parse(raw);
+        } catch (e) {
+          data = { books: [], sessions: [] };
+        }
+      }
+    }
+
+    function formatDuration(sec) {
+      const h = Math.floor(sec / 3600).toString().padStart(2, '0');
+      const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
+      const s = Math.floor(sec % 60).toString().padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    function refreshTimerDisplay() {
+      if (timer.running) {
+        const now = Math.floor((Date.now() - timer.startTs) / 1000);
+        const total = timer.elapsed + now;
+        timerDisplay.textContent = formatDuration(total);
+        timerStatus.textContent = "Running";
+      } else {
+        timerDisplay.textContent = formatDuration(timer.elapsed);
+        timerStatus.textContent = "Paused";
+      }
+      // update per-book total if a book is active
+      updatePerBookTimeDisplay();
+    }
+
+    function updatePerBookTimeDisplay() {
+      // Sum all sessions for each book and show a quick total for the currently selected book
+      const byBook = {};
+      data.sessions.forEach(s => {
+        byBook[s.bookId] = (byBook[s.bookId] || 0) + s.durationSec;
+      });
+      // If a current book is selected, show its total in the perBookTime element
+      const current = timer.currentBookId;
+      if (current && byBook[current] != null) {
+        perBookTimeEl.textContent = "Total for current session: " + formatDuration(byBook[current]);
+      } else if (current) {
+        perBookTimeEl.textContent = "Total for current session: " + formatDuration(0);
+      } else {
+        // show overall from data
+        const totalAll = Object.values(byBook).reduce((a,b)=>a+b,0);
+        perBookTimeEl.textContent = "Total recorded: " + formatDuration(totalAll);
+      }
+    }
+
+    function startTimerFor(bookId) {
+      if (!bookId) return;
+      if (timer.running) {
+        const now = Math.floor((Date.now() - timer.startTs) / 1000);
+        timer.elapsed += now;
+      }
+      timer.running = true;
+      timer.startTs = Date.now();
+      timer.currentBookId = bookId;
+      timer.intervalId = setInterval(refreshTimerDisplay, 1000);
+      refreshTimerDisplay();
+    }
+
+    function pauseTimer() {
+      if (!timer.running) return;
+      const now = Math.floor((Date.now() - timer.startTs) / 1000);
+      timer.elapsed += now;
+      timer.running = false;
+      timer.startTs = null;
+      clearInterval(timer.intervalId);
+      timer.intervalId = null;
+      refreshTimerDisplay();
+    }
+
+    function resetTimer() {
+      timer.running = false;
+      timer.startTs = null;
+      timer.elapsed = 0;
+      timer.currentBookId = null;
+      if (timer.intervalId) clearInterval(timer.intervalId);
+      timer.intervalId = null;
+      refreshTimerDisplay();
+      timerStatus.textContent = "Idle";
+      updatePerBookTimeDisplay();
+    }
+
+    function logCurrentSession() {
+      if (!timer.currentBookId) return;
+      const bookId = timer.currentBookId;
+      let nowElapsed = timer.elapsed;
+      if (timer.running) {
+        const running = Math.floor((Date.now() - timer.startTs) / 1000);
+        nowElapsed += running;
+      }
+      data.sessions.push({
+        bookId,
+        durationSec: nowElapsed,
+        timestamp: new Date().toISOString()
+      });
+
+      // Update book's started/completed status via UI as needed
+      // If the book has a completedAt date, keep it as is.
+
+      // Reset timer after logging
+      timer.running = false;
+      timer.startTs = null;
+      timer.elapsed = 0;
+      if (timer.intervalId) clearInterval(timer.intervalId);
+      timer.intervalId = null;
+      timer.currentBookId = null;
+      refreshTimerDisplay();
+      timerStatus.textContent = "Idle";
+
+      // Persist
+      saveAll();
+    }
+
+    // Rendering
+    function renderBookList() {
+      activeBookSelector.innerHTML = "";
+      data.books.forEach(b => {
+        const opt = document.createElement("option");
+        opt.value = b.id;
+        const name = b.name || "Untitled";
+        opt.textContent = `${name} by ${b.author || ""}`.trim();
+        activeBookSelector.appendChild(opt);
+      });
+      totalStartedEl.textContent = data.books.length;
+      const completed = data.books.filter(b => b.completedAt).length;
+      totalCompletedEl.textContent = completed;
+    }
+
+    function renderSummary() {
+      summaryListEl.innerHTML = "";
+      // Build a map: bookId -> totalTimeSec from sessions
+      const timeByBook = {};
+      data.sessions.forEach(s => {
+        timeByBook[s.bookId] = (timeByBook[s.bookId] || 0) + s.durationSec;
+      });
+
+      data.books.forEach(b => {
+        const item = document.createElement("div");
+        item.className = "summary-item";
+
+        const title = b.name || "Untitled";
+        const author = b.author || "";
+        const line = document.createElement("div");
+        line.style.fontWeight = 700;
+        line.textContent = `${title}${author ? " — " + author : ""}`;
+
+        const meta = document.createElement("div");
+        meta.style.color = "#cbd5e1";
+        const started = b.startedAt ? new Date(b.startedAt).toLocaleDateString() : "";
+        const comp = b.completedAt ? "Completed on " + new Date(b.completedAt).toLocaleDateString() : "";
+        const totalTime = timeByBook[b.id] != null ? formatDuration(timeByBook[b.id]) : "00:00:00";
+        meta.textContent = [started && ("Started: "+started), comp && comp, "Time spent: "+totalTime].filter(Boolean).join(" | ");
+
+        const detail = document.createElement("div");
+        detail.style.fontSize = ".92rem";
+        detail.textContent = b.shortDetail || "";
+
+        const favs = document.createElement("div");
+        favs.className = "fav";
+        favs.textContent = (b.favLines && b.favLines.length) ? "favorite lines saved" : "no favorites yet";
+
+        item.appendChild(line);
+        item.appendChild(meta);
+        item.appendChild(detail);
+        item.appendChild(favs);
+
+        summaryListEl.appendChild(item);
+      });
+    }
+
+    function renderFavDisplay() {
+      const lines = [];
+      data.books.forEach(b => {
+        if (b.favLines && b.favLines.length) {
+          lines.push(...b.favLines.map(l => `“${l}” — ${b.name} by ${b.author}`.trim()));
+        }
+      });
+      favDisplayEl.value = lines.length ? lines.join("
+") : "";
+    }
+
+    function renderUI() {
+      renderBookList();
+      renderSummary();
+      renderFavDisplay();
+      updatePerBookTimeDisplay();
+    }
+
+    // Event bindings
+    saveBookBtn.addEventListener("click", () => {
+      const name = bookNameEl.value.trim();
+      const author = authorEl.value.trim();
+      const lastPage = lastPageEl.value ? parseInt(lastPageEl.value, 10) : 0;
+      const details = detailsEl.value.trim();
+      const favLinesRaw = favLinesEl.value.trim();
+      const shortDetail = shortDetailEl.value.trim();
+
+      if (!name) {
+        alert("Please enter a book name.");
+        return;
+      }
+
+      const newBook = {
+        id: "b_" + Date.now(),
+        name,
+        author,
+        lastPage: Number.isFinite(lastPage) ? lastPage : 0,
+        details,
+        shortDetail,
+        favLines: favLinesRaw ? favLinesRaw.split(/
+?
+/).map(s => s.trim()).filter(Boolean) : [],
+        isActive: true,
+        startedAt: new Date().toISOString(),
+        completedAt: null,
+        totalTimeSec: 0
+      };
+
+      data.books.push(newBook);
+
+      bookNameEl.value = "";
+      authorEl.value = "";
+      lastPageEl.value = "";
+      detailsEl.value = "";
+      favLinesEl.value = "";
+      shortDetailEl.value = "";
+      isActiveEl.value = "true";
+
+      saveAll();
+    });
+
+    clearFormBtn.addEventListener("click", () => {
+      bookNameEl.value = "";
+      authorEl.value = "";
+      lastPageEl.value = "";
+      detailsEl.value = "";
+      favLinesEl.value = "";
+      shortDetailEl.value = "";
+      isActiveEl.value = "true";
+    });
+
+    startTimerBtn.addEventListener("click", () => {
+      const selected = activeBookSelector.value;
+      if (!selected) {
+        alert("Please select a book to track time.");
+        return;
+      }
+      startTimerFor(selected);
+    });
+
+    pauseTimerBtn.addEventListener("click", pauseTimer);
+    resetTimerBtn.addEventListener("click", resetTimer);
+    logSessionBtn.addEventListener("click", logCurrentSession);
+
+    exportDataBtn.addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "reading-tracker-export.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    importDataBtn.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json";
+      input.onchange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const text = await file.text();
+        try {
+          const obj = JSON.parse(text);
+          data = obj;
+          saveAll();
+        } catch {
+          alert("Invalid JSON file.");
+        }
+      };
+      input.click();
+    });
+
+    deleteAllBtn.addEventListener("click", () => {
+      if (confirm("Delete all data? This cannot be undone.")) {
+        data = { books: [], sessions: [] };
+        saveAll();
+      }
+    });
+
+    // On load
+    loadAll();
+    renderUI();
+
+    // Optional: auto-scroll or enhancements can be added later
+  </script>
+</body>
+</html>
